@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>دفتر خرج چهارنفره</title>
+<meta name="theme-color" content="#131216">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="دفتر خرج">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap">
+<style>html{color-scheme:dark;background:#131216}body{margin:0}</style>
+</head>
+<body>
+<style>
+/* Layout: one narrow column, summary on top, entry form, then the ledger rows newest first */
+:root{
+  --bg:#131216; --card:#1c1b21; --ink:#ece9f3; --muted:#9b95ab; --line:#2f2c39;
+  --accent:#a183ff; --accent-ink:#150f26; --neg:#ff8fa3; --pos:#8fe3b0; --soft:#27242f;
+  --font:'Vazirmatn',Tahoma,'Segoe UI',sans-serif; color-scheme:dark;
+}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.6;
+  padding-inline:16px;padding-block:16px 48px;direction:rtl}
+*{box-sizing:border-box}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:20px;font-weight:800;margin:0}
+h2{font-size:15px;font-weight:700;margin:0}
+.num{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.muted{color:var(--muted);font-size:13px}
+.sum{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.p{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.p .n{font-weight:700}
+.p .r{font-size:19px;font-weight:800}
+.p .s{font-size:12px;color:var(--muted)}
+.u{font-size:12px;font-weight:500;color:var(--muted)}
+.neg{color:var(--neg)} .pos{color:var(--pos)}
+.tot{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;background:var(--soft);border-radius:10px;font-weight:700}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--soft);border-radius:10px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:700;padding:8px 6px;border-radius:8px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.4)}
+form{display:flex;flex-direction:column;gap:12px}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);min-width:0}
+input,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;width:100%;min-width:0}
+input.numin{text-align:left;direction:ltr}
+input:focus-visible,textarea:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.grid4{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{border:0;border-radius:10px;padding:12px;font:inherit;font-weight:700;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+.btn.sec{background:var(--soft);color:var(--ink)}
+.btn.danger{background:var(--neg);color:var(--bg)}
+.xl{display:flex;flex-direction:column;gap:8px}
+.btn.big{padding:14px;font-size:16px}
+.row{display:flex;gap:8px}
+.row>*{flex:1}
+.preview{font-size:13px;color:var(--muted);background:var(--soft);border-radius:8px;padding:8px 10px}
+.item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.item .h{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.item .t{font-weight:700;min-width:0;overflow-wrap:anywhere}
+.badge{font-size:11px;background:var(--soft);color:var(--accent);border-radius:99px;padding:1px 8px;font-weight:700;white-space:nowrap}
+.cells{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;text-align:center}
+.cells div{background:var(--bg);border-radius:8px;padding:4px 2px;min-width:0}
+.cells small{display:block;color:var(--muted);font-size:11px}
+.cells b{font-size:12.5px;font-weight:600}
+.acts{display:flex;gap:8px;justify-content:space-between;align-items:center}
+.link{background:none;border:0;color:var(--accent);font:inherit;font-size:13px;font-weight:700;padding:4px 0;cursor:pointer}
+.link.d{color:var(--neg)}
+details summary{cursor:pointer;font-weight:700}
+details[open] summary{margin-bottom:12px}
+.empty{text-align:center;color:var(--muted);padding:24px 8px}
+.err{color:var(--neg);font-size:13px;min-height:1.2em}
+</style>
+
+<div class="wrap">
+  <div class="top"><h1>دفتر خرج</h1><span class="muted" id="count"></span></div>
+
+  <section class="card" style="display:flex;flex-direction:column;gap:10px" aria-label="خلاصه">
+    <div class="sum" id="sum"></div>
+    <div class="tot"><span>جمع کل خرج</span><span><span class="num" id="gt"></span> تومان</span></div>
+    <div class="tot"><span>مانده کل</span><span><span class="num" id="gr"></span> تومان</span></div>
+  </section>
+
+  <section class="card" aria-label="ثبت خرید">
+    <form id="f" autocomplete="off">
+      <h2 id="ftitle">خرید جدید</h2>
+      <label for="title">عنوان خرید
+        <input id="title" type="text" placeholder="مثلا: میوه و سبزی">
+      </label>
+      <div class="seg" role="group" aria-label="نوع ثبت">
+        <button type="button" id="m-manual" aria-pressed="true">مبلغ هر نفر</button>
+        <button type="button" id="m-split" aria-pressed="false">تقسیم مساوی</button>
+      </div>
+      <div id="manual" class="grid4"></div>
+      <div id="splitbox" hidden>
+        <label for="total">مبلغ کل به تومان (بین هر ۴ نفر مساوی تقسیم می‌شود)
+          <input id="total" class="numin" type="text" inputmode="numeric" placeholder="60,000">
+        </label>
+        <div class="preview" id="pv" style="margin-top:8px"></div>
+      </div>
+      <div class="err" id="err" role="alert"></div>
+      <div class="row">
+        <button class="btn" type="submit" id="save">ثبت خرید</button>
+        <button class="btn sec" type="button" id="cancel" hidden>انصراف</button>
+      </div>
+    </form>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:10px" aria-label="لیست خریدها">
+    <h2>خریدها</h2>
+    <div id="list" style="display:flex;flex-direction:column;gap:10px"></div>
+  </section>
+
+  <details class="card">
+    <summary>نام‌ها و مبلغ واریزی</summary>
+    <div class="grid4" id="settings"></div>
+  </details>
+
+  <details class="card">
+    <summary>پشتیبان‌گیری</summary>
+    <p class="muted" style="margin-top:0">اطلاعات فقط روی همین مرورگر گوشی ذخیره می‌شود. اگر داده‌های مرورگر را پاک کنی از بین می‌رود، پس هر چند وقت یک بار متن زیر را کپی و جایی نگه دار.</p>
+    <label for="bk">متن پشتیبان
+      <textarea id="bk" rows="4" class="numin"></textarea>
+    </label>
+    <div class="row" style="margin-top:8px">
+      <button class="btn sec" type="button" id="copy">کپی</button>
+      <button class="btn sec" type="button" id="restore">بازیابی از متن</button>
+    </div>
+    <div class="muted" id="bkmsg" style="margin-top:6px"></div>
+  </details>
+
+  <section class="card xl" aria-label="خروجی اکسل">
+    <h2>خروجی اکسل</h2>
+    <p class="muted" style="margin:0">برای گرفتن فایل اکسل یا PDF کامل: متن پشتیبان را کپی کن و در چت برای Claude بفرست. او فایل اکسل را با همان قالب و فرمول‌های فایل خودت می‌سازد و برایت می‌فرستد.</p>
+    <button class="btn big" type="button" id="xbk">کپی پشتیبان برای Claude</button>
+    <div class="muted" id="xbkmsg" role="status"></div>
+    <p class="muted" style="margin:8px 0 0">این دکمه فایل اکسل را مستقیم روی گوشی می‌سازد و دانلود می‌کند.</p>
+    <button class="btn sec big" type="button" id="xlsx">دانلود مستقیم اکسل</button>
+    <div class="muted" id="xmsg" role="status"></div>
+    <p class="muted" style="margin:8px 0 0">اگر دانلود در مرورگر تو کار نکرد، این دکمه جدول را با همان فرمول‌ها کپی می‌کند. بعد در اکسل یا Google Sheets سلول A1 را انتخاب و پیست کن.</p>
+    <button class="btn sec big" type="button" id="xcopy">کپی برای اکسل</button>
+    <textarea id="xta" rows="6" class="numin" hidden aria-label="متن جدول"></textarea>
+    <div class="muted" id="xcmsg" role="status"></div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script>
+(function(){
+  var KEY='kharj-v1';
+  var DEF={names:['دانیال','ممد','ثنا','شقایق'],deposits:[5000000,5000000,5000000,5000000],entries:[]};
+  var S=load();
+  var mode='manual', editing=null, delArm=null;
+  var $=function(id){return document.getElementById(id)};
+
+  function load(){
+    try{var r=localStorage.getItem(KEY);if(r){var o=JSON.parse(r);if(o&&o.entries&&o.names&&o.deposits)return o}}catch(e){}
+    return JSON.parse(JSON.stringify(DEF));
+  }
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+  function parse(v){
+    if(v==null)return 0;
+    v=String(v).replace(/[۰-۹]/g,function(d){return d.charCodeAt(0)-1776})
+      .replace(/[٠-٩]/g,function(d){return d.charCodeAt(0)-1632})
+      .replace(/[,٬،\s]/g,'');
+    var n=parseFloat(v);return isFinite(n)?n:0;
+  }
+  function fmt(n){return Math.round(n).toLocaleString('en-US')}
+  function liveFmt(el){
+    el.addEventListener('input',function(){
+      var v=el.value, pos=el.selectionStart==null?v.length:el.selectionStart;
+      var D=/[^0-9۰-۹٠-٩]/g;
+      var before=v.slice(0,pos).replace(D,'').length;
+      var digits=v.replace(D,'').replace(/[۰-۹]/g,function(d){return d.charCodeAt(0)-1776}).replace(/[٠-٩]/g,function(d){return d.charCodeAt(0)-1632}).replace(/^0+(?=\d)/,'');
+      var out=digits.replace(/\B(?=(\d{3})+(?!\d))/g,',');
+      el.value=out;
+      var c=0,np=0;
+      while(np<out.length&&c<before){if(/\d/.test(out[np]))c++;np++}
+      try{el.setSelectionRange(np,np)}catch(e){}
+    });
+  }
+  function setNum(el,n){el.value=n?fmt(n):''}
+  function backupText(){return 'دفتر خرج - پشتیبان\n'+JSON.stringify(S)}
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function splitEven(total){
+    var base=Math.floor(total/4), rem=total-base*4, out=[base,base,base,base];
+    for(var i=0;i<rem;i++)out[i]+=1;
+    return out;
+  }
+  function amounts(e){return e.split?splitEven(e.total):e.a}
+
+  function render(){
+    var spent=[0,0,0,0];
+    S.entries.forEach(function(e){amounts(e).forEach(function(v,i){spent[i]+=v})});
+    var h='';
+    for(var i=0;i<4;i++){
+      var rem=S.deposits[i]-spent[i];
+      h+='<div class="p"><div class="n">'+esc(S.names[i])+'</div><div class="r"><span class="num '+(rem<0?'neg':'pos')+'">'+fmt(rem)+'</span> <span class="u">تومان</span></div><div class="s">خرج <span class="num">'+fmt(spent[i])+'</span> تومان</div></div>';
+    }
+    $('sum').innerHTML=h;
+    var gs=spent.reduce(function(a,b){return a+b},0), gd=S.deposits.reduce(function(a,b){return a+b},0);
+    $('gt').textContent=fmt(gs);
+    var gr=gd-gs; $('gr').textContent=fmt(gr); $('gr').className='num '+(gr<0?'neg':'');
+    $('count').textContent=S.entries.length?S.entries.length+' خرید ثبت شده':'';
+
+    var l='';
+    if(!S.entries.length) l='<div class="empty card">هنوز خریدی ثبت نشده. از فرم بالا اولین خرید را وارد کن.</div>';
+    S.entries.slice().reverse().forEach(function(e){
+      var a=amounts(e), sum=a.reduce(function(x,y){return x+y},0);
+      l+='<article class="item"><div class="h"><span class="t">'+esc(e.title||'بدون عنوان')+(e.split?' <span class="badge">تقسیم مساوی</span>':'')+'</span><span style="font-weight:800;white-space:nowrap"><span class="num">'+fmt(sum)+'</span> تومان</span></div><div class="cells">';
+      for(var i=0;i<4;i++) l+='<div><small>'+esc(S.names[i])+'</small><b class="num">'+fmt(a[i])+'</b></div>';
+      l+='</div><div class="acts"><span class="muted">'+esc(e.date||'')+'</span><span style="display:flex;gap:14px">';
+      l+='<button class="link" data-edit="'+e.id+'">ویرایش</button>';
+      l+= delArm===e.id?'<button class="link d" data-del="'+e.id+'">مطمئنی؟ حذف</button>':'<button class="link d" data-del="'+e.id+'">حذف</button>';
+      l+='</span></div></article>';
+    });
+    $('list').innerHTML=l;
+  }
+
+  function buildInputs(){
+    var h='',s='';
+    for(var i=0;i<4;i++){
+      h+='<label for="a'+i+'"><span><span class="nm" data-i="'+i+'">'+esc(S.names[i])+'</span> (تومان)</span><input id="a'+i+'" class="numin" type="text" inputmode="numeric" placeholder="0"></label>';
+      s+='<label for="nm'+i+'">نام نفر '+(i+1)+'<input id="nm'+i+'" type="text" value="'+esc(S.names[i])+'"></label>';
+    }
+    for(var j=0;j<4;j++)s+='<label for="dp'+j+'">واریزی '+esc(S.names[j])+' (تومان)<input id="dp'+j+'" class="numin" type="text" inputmode="numeric" value="'+fmt(S.deposits[j])+'"></label>';
+    $('manual').innerHTML=h; $('settings').innerHTML=s;
+    for(var k=0;k<4;k++){
+      liveFmt($('a'+k)); liveFmt($('dp'+k));
+      (function(k){
+        $('nm'+k).addEventListener('input',function(){S.names[k]=this.value||('نفر '+(k+1));save();render();var n=document.querySelectorAll('.nm')[k];if(n)n.textContent=S.names[k]});
+        $('dp'+k).addEventListener('input',function(){S.deposits[k]=parse(this.value);save();render()});
+      })(k);
+    }
+  }
+
+  function setMode(m){
+    mode=m;
+    $('m-manual').setAttribute('aria-pressed',m==='manual');
+    $('m-split').setAttribute('aria-pressed',m==='split');
+    $('manual').hidden=m!=='manual'; $('splitbox').hidden=m!=='split';
+    pv();
+  }
+  function pv(){
+    var t=parse($('total').value);
+    if(!t){$('pv').textContent='سهم هر نفر بعد از وارد کردن مبلغ اینجا دیده می‌شود.';return}
+    var p=splitEven(t);
+    $('pv').innerHTML='سهم هر نفر: <span class="num">'+fmt(p[0])+'</span> تومان'+(p[3]!==p[0]?' (چند نفر ۱ واحد بیشتر برای جور شدن جمع)':'');
+  }
+  function today(){
+    try{return new Date().toLocaleDateString('fa-IR')}catch(e){return ''}
+  }
+  function reset(){
+    editing=null; $('f').reset(); $('ftitle').textContent='خرید جدید'; $('save').textContent='ثبت خرید';
+    $('cancel').hidden=true; $('err').textContent=''; setMode('manual');
+  }
+
+  $('m-manual').onclick=function(){setMode('manual')};
+  $('m-split').onclick=function(){setMode('split')};
+  liveFmt($('total'));
+  $('total').addEventListener('input',pv);
+  $('cancel').onclick=reset;
+
+  $('f').addEventListener('submit',function(ev){
+    ev.preventDefault();
+    var title=$('title').value.trim(), e;
+    if(mode==='split'){
+      var t=parse($('total').value);
+      if(t<=0){$('err').textContent='مبلغ کل را وارد کن.';return}
+      e={split:true,total:t};
+    }else{
+      var a=[0,1,2,3].map(function(i){return parse($('a'+i).value)});
+      if(a.every(function(v){return v===0})){$('err').textContent='حداقل مبلغ یک نفر را وارد کن.';return}
+      e={split:false,a:a};
+    }
+    e.title=title;
+    if(editing){
+      var idx=S.entries.findIndex(function(x){return x.id===editing});
+      if(idx>=0){e.id=editing;e.date=S.entries[idx].date;S.entries[idx]=e}
+    }else{
+      e.id=Date.now().toString(36)+Math.random().toString(36).slice(2,5);e.date=today();S.entries.push(e);
+    }
+    save(); reset(); render();
+  });
+
+  $('list').addEventListener('click',function(ev){
+    var b=ev.target.closest('button'); if(!b)return;
+    var ed=b.getAttribute('data-edit'), dl=b.getAttribute('data-del');
+    if(ed){
+      var e=S.entries.find(function(x){return x.id===ed}); if(!e)return;
+      editing=ed; $('title').value=e.title||'';
+      if(e.split){setMode('split');setNum($('total'),e.total);pv()}
+      else{setMode('manual');for(var i=0;i<4;i++)setNum($('a'+i),e.a[i])}
+      $('ftitle').textContent='ویرایش خرید'; $('save').textContent='ذخیره تغییرات'; $('cancel').hidden=false;
+      $('f').scrollIntoView({behavior:'smooth',block:'start'});
+    }else if(dl){
+      if(delArm===dl){S.entries=S.entries.filter(function(x){return x.id!==dl});delArm=null;save();if(editing===dl)reset()}
+      else delArm=dl;
+      render();
+    }
+  });
+
+  $('bk').value='';
+  document.querySelector('details:last-of-type summary').addEventListener('click',function(){$('bk').value=backupText()});
+  $('copy').onclick=function(){
+    var v=backupText(); $('bk').value=v;
+    var ok=function(){$('bkmsg').textContent='کپی شد.'};
+    var fail=function(){$('bk').focus();$('bk').select();$('bkmsg').textContent='متن انتخاب شد، خودت کپی کن.'};
+    try{navigator.clipboard.writeText(v).then(ok,fail)}catch(e){fail()}
+  };
+  $('restore').onclick=function(){
+    try{
+      var raw=$('bk').value, o=JSON.parse(raw.slice(raw.indexOf('{')));
+      if(!o||!Array.isArray(o.entries)||!Array.isArray(o.names)||!Array.isArray(o.deposits))throw 0;
+      S=o;save();buildInputs();render();$('bkmsg').textContent='بازیابی شد.';
+    }catch(e){$('bkmsg').textContent='متن پشتیبان معتبر نیست.'}
+  };
+
+
+  /*XL-START*/
+  function buildWorkbook(EJ,S){
+    var wb=new EJ.Workbook();
+    var ws=wb.addWorksheet('Sheet1',{views:[{rightToLeft:true}]});
+    ws.getColumn(1).width=31;
+    for(var c=2;c<=5;c++)ws.getColumn(c).width=16.7;
+    ws.getColumn(6).width=18;
+    var n=Math.max(35,S.entries.length), last=4+n, L='ABCDEF';
+    var med={style:'medium'}, thin={style:'thin'};
+    function st(cell,o){
+      cell.font={name:'B Roya',size:o.sz,bold:!!o.b};
+      cell.alignment={horizontal:'center',vertical:'middle'};
+      var bd=o.thin?thin:med; cell.border={top:bd,left:bd,bottom:bd,right:bd};
+      if(o.fill)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:o.fill}};
+      if(o.fmt)cell.numFmt=o.fmt;
+    }
+    var spent=[0,0,0,0], rows=[];
+    S.entries.forEach(function(e){var a=amounts(e);rows.push(a);a.forEach(function(v,i){spent[i]+=v})});
+    var sum=function(a){return a.reduce(function(x,y){return x+y},0)};
+    var dep=S.deposits;
+    // rows 1-4
+    var r1=['عنوان'].concat(S.names,['جمع سطری']);
+    r1.forEach(function(v,i){var c=ws.getCell(1,i+1);c.value=v;st(c,{sz:14,b:true})});
+    var c2=ws.getCell(2,1);c2.value='عدد واریز شده هر شخص ';st(c2,{sz:14,b:true});
+    var c3=ws.getCell(3,1);c3.value='جمع کل خرج ';st(c3,{sz:14});
+    var c4=ws.getCell(4,1);c4.value='مقدار پول باقی مانده';st(c4,{sz:14});
+    for(var i=0;i<4;i++){
+      var col=L[i+1];
+      var a2=ws.getCell(2,i+2);a2.value=dep[i];st(a2,{sz:14,b:true,fmt:'#,##0',fill:i===0?'FFCCCCFF':null});
+      var a3=ws.getCell(3,i+2);a3.value={formula:'SUM('+col+'5:'+col+last+')',result:spent[i]};st(a3,{sz:14,b:true,fmt:'#,##0'});
+      var a4=ws.getCell(4,i+2);a4.value={formula:col+'2-'+col+'3',result:dep[i]-spent[i]};st(a4,{sz:14,b:true,fmt:'#,##0'});
+    }
+    var f2=ws.getCell(2,6);f2.value={formula:'E2+D2+C2+B2',result:sum(dep)};st(f2,{sz:14,b:true,fmt:'#,##0'});
+    var f3=ws.getCell(3,6);f3.value={formula:'E3+D3+C3+B3',result:sum(spent)};st(f3,{sz:14,b:true,fmt:'#,##0'});
+    var f4=ws.getCell(4,6);f4.value={formula:'E4+D4+C4+B4',result:sum(dep)-sum(spent)};st(f4,{sz:14,b:true,fmt:'#,##0'});
+    ws.getRow(1).height=23.25; ws.getRow(2).height=31.5; ws.getRow(3).height=23.25; ws.getRow(4).height=23.25;
+    // data rows
+    var even=['FFEFF6EA','FFE1E1FF','FFEAF3FA','FFFDEFE7','FFFFF9E7'], odd=[null,'FFCCCCFF',null,null,null];
+    for(var k=0;k<n;k++){
+      var r=5+k, ent=S.entries[k], a=rows[k]||null, isEven=(r%2===0);
+      ws.getRow(r).height=23.25;
+      for(var j=0;j<5;j++){
+        var cell=ws.getCell(r,j+1);
+        if(ent){cell.value=j===0?(ent.title||''):a[j-1]}
+        st(cell,{sz:11,thin:j>0,fmt:j>0?'#,##0':null,fill:isEven?even[j]:odd[j]});
+      }
+      var fc=ws.getCell(r,6);
+      fc.value={formula:'E'+r+'+D'+r+'+C'+r+'+B'+r,result:a?sum(a):0};
+      st(fc,{sz:14,b:true,fmt:'#,##0'});
+    }
+    return wb;
+  }
+  function stamp(){
+    try{
+      var p=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),o={};
+      p.forEach(function(x){o[x.type]=x.value});
+      return o.year+'-'+o.month+'-'+o.day;
+    }catch(e){return new Date().toISOString().slice(0,10)}
+  }
+  function buildTSV(S){
+    var n=Math.max(35,S.entries.length), last=4+n, L='ABCDEF', cl=function(t){return String(t==null?'':t).replace(/[\t\r\n]+/g,' ')};
+    var out=[], sp=[0,0,0,0];
+    S.entries.forEach(function(e){amounts(e).forEach(function(v,i){sp[i]+=v})});
+    out.push(['عنوان'].concat(S.names.map(cl),['جمع سطری']).join('\t'));
+    var r2=['عدد واریز شده هر شخص '].concat(S.deposits,['=E2+D2+C2+B2']);
+    var r3=['جمع کل خرج '],r4=['مقدار پول باقی مانده'];
+    for(var i=0;i<4;i++){var c=L[i+1];r3.push('=SUM('+c+'5:'+c+last+')');r4.push('='+c+'2-'+c+'3')}
+    r3.push('=E3+D3+C3+B3'); r4.push('=E4+D4+C4+B4');
+    out.push(r2.join('\t'),r3.join('\t'),r4.join('\t'));
+    for(var k=0;k<n;k++){
+      var r=5+k, e=S.entries[k], a=e?amounts(e):['','','',''];
+      out.push([e?cl(e.title):''].concat(a,['=E'+r+'+D'+r+'+C'+r+'+B'+r]).join('\t'));
+    }
+    return out.join('\n');
+  }
+  /*XL-END*/
+  (function(){
+    var btn=$('xlsx'), msg=$('xmsg');
+    function say(t){msg.textContent=t}
+    btn.addEventListener('click',function(){
+      if(!window.ExcelJS){say('کتابخانه اکسل هنوز بارگذاری نشده. یک بار با اینترنت باز کن و دوباره امتحان کن.');return}
+      btn.disabled=true; say('در حال ساخت فایل...');
+      buildWorkbook(window.ExcelJS,S).xlsx.writeBuffer().then(function(buf){
+        var blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+        var url=URL.createObjectURL(blob), a=document.createElement('a');
+        a.href=url; a.download='kharj-'+stamp()+'.xlsx'; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function(){URL.revokeObjectURL(url)},10000);
+        say('فایل اکسل ساخته شد. در پوشه دانلودها را ببین.');
+      }).catch(function(){say('ساخت فایل انجام نشد.')}).then(function(){btn.disabled=false});
+    });
+  })();
+  $('xbk').addEventListener('click',function(){
+    var t=backupText(), ta=$('xta'), m=$('xbkmsg');
+    var manual=function(){ta.value=t;ta.hidden=false;ta.focus();ta.select();m.textContent='متن انتخاب شد. کپی کن و در چت برای Claude بفرست.'};
+    try{navigator.clipboard.writeText(t).then(function(){m.textContent='کپی شد. حالا در چت برای Claude پیست کن و بفرست.'},manual)}catch(e){manual()}
+  });
+  $('xcopy').addEventListener('click',function(){
+    var t=buildTSV(S), ta=$('xta'), m=$('xcmsg');
+    var manual=function(){ta.value=t;ta.hidden=false;ta.focus();ta.select();m.textContent='متن انتخاب شد. کپی کن و در اکسل پیست کن.'};
+    try{navigator.clipboard.writeText(t).then(function(){m.textContent='کپی شد. در اکسل یا Google Sheets سلول A1 را انتخاب و پیست کن.'},manual)}catch(e){manual()}
+  });
+
+  buildInputs(); setMode('manual'); render();
+})();
+</script>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
+</script>
+</body>
+</html>
